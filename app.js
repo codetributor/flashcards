@@ -1,18 +1,42 @@
 const express = require('express');
+const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 
 const app = express();
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cookieParser());
 
 app.set('view engine', 'pug');
 
-app.get('/', function(req, res) {
-    res.render('index');
+const mainRoutes = require('./routes');
+const cardRoutes = require('./routes/cards');
+
+app.use(mainRoutes);
+app.use('/cards', cardRoutes);
+
+app.use((req, res, next) => {
+    req.message = "Repeat this message";
+    const err = new Error('Oh noes!');
+    err.status = 500;
+    next(err);
 });
 
-app.get('/cards', function(req, res) {
-    res.locals.prompt ="Who is buried in Grant's tomb";
-    res.locals.hint = "Think about whose tomb it is"
-    res.render('card');
+app.use((req, res, next) => {
+    console.log(req.message);
+    next();
+})
+
+app.use((req, res, next) => {
+    const err = new Error('Not Found');
+    err.status = 404;
+    next(err);
 });
+
+app.use((err, req, res, next) => {
+    res.locals.error = err;
+    res.status(err.status)
+    res.render('error');
+})
 
 app.listen(3000, function() {
     console.log("This application is running on port 3000.")
